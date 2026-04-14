@@ -4,7 +4,8 @@ from jose import jwt
 SECRET_KEY = "minerva-secret"
 ALGORITHM = "HS256"
 
-pwd_context = CryptContext(schemes=["bcrypt"])
+# Use pbkdf2_sha256 for stable cross-platform hashing behavior.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def hash_password(password: str):
