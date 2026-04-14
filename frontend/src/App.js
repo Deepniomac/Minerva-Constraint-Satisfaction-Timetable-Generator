@@ -15,6 +15,7 @@ export default function App() {
   const [semesterInput, setSemesterInput] = useState("");
   const [runIdInput, setRunIdInput] = useState("");
   const [rows, setRows] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [timeslots, setTimeslots] = useState([]);
   const [validation, setValidation] = useState(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
@@ -37,8 +38,8 @@ export default function App() {
   async function listDepartments() {
     try {
       const res = await axios.get(`${API_BASE}/departments/`, { headers: authHeaders });
-      setRows(res.data || []);
-      setMessage("Departments loaded");
+      setDepartments(res.data || []);
+      setMessage(`Departments loaded (${(res.data || []).length}).`);
     } catch (error) {
       setMessage(error?.response?.data?.detail || "Failed to load departments");
     }
@@ -190,7 +191,17 @@ export default function App() {
               <button className="btn" onClick={createDepartment}>Create Department</button>
               <button className="btn" onClick={createFaculty}>Create Faculty</button>
             </div>
-            <button className="btn ghost" onClick={listDepartments}>List Departments</button>
+            <button className="btn ghost full" onClick={listDepartments}>List Departments</button>
+            {departments.length > 0 && (
+              <div className="list-box">
+                {departments.map((d) => (
+                  <div key={d.id} className="list-item">
+                    <span>#{d.id}</span>
+                    <span>{d.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </aside>
