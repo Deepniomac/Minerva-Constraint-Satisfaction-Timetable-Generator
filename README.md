@@ -6,7 +6,7 @@ Phase 1 foundation for a timetable automation platform aligned to the PRD.
 
 - `backend` - FastAPI + SQLAlchemy APIs
 - `frontend` - React Phase 1 console
-- `docs` - interview and implementation records
+- `docs` - project documentation and implementation records
 
 ## Quick Start
 

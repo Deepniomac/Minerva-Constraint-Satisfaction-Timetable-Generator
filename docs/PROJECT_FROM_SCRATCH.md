@@ -1,4 +1,4 @@
-# Minerva Project From Scratch (Interview Notes)
+# Minerva Project From Scratch
 
 ## 1) Problem Statement
 
@@ -80,7 +80,7 @@ Minerva automates timetable setup for institutions by replacing manual spreadshe
 2. `npm install`
 3. `npm start`
 
-## 7) Demo Flow (Interview)
+## 7) Demo Flow
 
 1. Register an admin user: `POST /register?username=admin&password=admin123&role=admin`
 2. Login and copy token
