@@ -54,6 +54,13 @@ npm start
 - Validation endpoint for run-level conflict checks before publish
 - Timetable run lifecycle with `draft/published` status, `version`, and `semester_id`
 
+## Phase 3 Highlights
+
+- Calendar-style timetable view in frontend
+- Manual override endpoint for moving assignments between timeslots
+- Conflict-highlighted cells driven by validation output
+- Run-specific timetable loading for draft review and edit workflows
+
 ## Documentation
 
 - `docs/PROJECT_FROM_SCRATCH.md`

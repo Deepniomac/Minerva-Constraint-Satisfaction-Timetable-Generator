@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models.assignment import Assignment
+from app.models.timeslot import TimeSlot
 from app.models.timetable_run import TimetableRun
-from app.services.timetable_generator import generate_timetable, publish_timetable, validate_current_run
+from app.services.timetable_generator import generate_timetable, override_assignment, publish_timetable, validate_current_run
 
 router = APIRouter(prefix="/timetable", tags=["timetable"])
 
@@ -25,8 +26,12 @@ def publish(run_id: int, db: Session = Depends(get_db), _user=Depends(require_ro
 
 
 @router.get("/")
-def get_timetable(db: Session = Depends(get_db), _user=Depends(require_roles("admin", "department_head", "faculty", "student"))):
-    assignments = (
+def get_timetable(
+    run_id: int | None = None,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles("admin", "department_head", "faculty", "student")),
+):
+    query = (
         db.query(Assignment)
         .options(
             joinedload(Assignment.course),
@@ -34,10 +39,17 @@ def get_timetable(db: Session = Depends(get_db), _user=Depends(require_roles("ad
             joinedload(Assignment.room),
             joinedload(Assignment.timeslot),
         )
-        .all()
     )
+    if run_id is not None:
+        query = query.filter(Assignment.run_id == run_id)
+    assignments = query.all()
     return [
         {
+            "assignment_id": a.id,
+            "run_id": a.run_id,
+            "timeslot_id": a.timeslot_id,
+            "room_id": a.room_id,
+            "faculty_id": a.faculty_id,
             "course": a.course.name if a.course else None,
             "faculty": a.faculty.name if a.faculty else None,
             "room": a.room.name if a.room else None,
@@ -62,3 +74,26 @@ def list_runs(db: Session = Depends(get_db), _user=Depends(require_roles("admin"
         }
         for r in runs
     ]
+
+
+@router.get("/timeslots")
+def list_timeslots(db: Session = Depends(get_db), _user=Depends(require_roles("admin", "department_head", "faculty", "student"))):
+    return db.query(TimeSlot).order_by(TimeSlot.day, TimeSlot.slot).all()
+
+
+@router.post("/override")
+def override_entry(
+    assignment_id: int,
+    timeslot_id: int,
+    room_id: int | None = None,
+    faculty_id: int | None = None,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles("admin", "department_head")),
+):
+    return override_assignment(
+        db,
+        assignment_id=assignment_id,
+        timeslot_id=timeslot_id,
+        room_id=room_id,
+        faculty_id=faculty_id,
+    )

@@ -98,6 +98,6 @@ Completed in Phase 2:
 
 Open gaps:
 - Advanced CSP optimization objective functions
-- Drag-and-drop timetable editor
+- True drag-and-drop interactions (current Phase 3 override is form-driven)
 - Utilization analytics dashboards
 - Export/reporting, notifications, audit trail

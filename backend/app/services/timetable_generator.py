@@ -137,3 +137,52 @@ def publish_timetable(db: Session, run_id: int):
     run.published_at = func.now()
     db.commit()
     return {"message": "Timetable published", "run_id": run_id, "status": run.status}
+
+
+def override_assignment(
+    db: Session,
+    assignment_id: int,
+    timeslot_id: int | None = None,
+    room_id: int | None = None,
+    faculty_id: int | None = None,
+):
+    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+    if not assignment:
+        return {"error": "Assignment not found"}
+    if assignment.run_id is None:
+        return {"error": "Assignment is not linked to a timetable run"}
+
+    target_timeslot_id = timeslot_id if timeslot_id is not None else assignment.timeslot_id
+    target_room_id = room_id if room_id is not None else assignment.room_id
+    target_faculty_id = faculty_id if faculty_id is not None else assignment.faculty_id
+
+    target_timeslot = db.query(TimeSlot).filter(TimeSlot.id == target_timeslot_id).first()
+    if not target_timeslot:
+        return {"error": "Timeslot not found"}
+
+    run_assignments = (
+        db.query(Assignment)
+        .filter(Assignment.run_id == assignment.run_id, Assignment.id != assignment.id)
+        .all()
+    )
+    for other in run_assignments:
+        if other.timeslot_id != target_timeslot_id:
+            continue
+        if other.room_id == target_room_id:
+            return {"error": "Room conflict in selected timeslot"}
+        if other.faculty_id == target_faculty_id:
+            return {"error": "Faculty conflict in selected timeslot"}
+        if other.course_id == assignment.course_id:
+            return {"error": "Course already scheduled in selected timeslot"}
+
+    assignment.timeslot_id = target_timeslot_id
+    assignment.room_id = target_room_id
+    assignment.faculty_id = target_faculty_id
+    db.commit()
+    validation = validate_current_run(db, assignment.run_id)
+    return {
+        "message": "Assignment updated",
+        "assignment_id": assignment.id,
+        "run_id": assignment.run_id,
+        "validation": validation,
+    }

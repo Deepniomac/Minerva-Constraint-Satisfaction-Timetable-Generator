@@ -76,3 +76,36 @@ Implemented scheduling engine upgrades and run lifecycle controls:
   - Run validation
   - Run publishing
   - Run listing
+
+---
+
+# Phase 3 Changelog
+
+## Date
+
+2026-04-14
+
+## Summary
+
+Implemented timetable review/edit UI and manual override flow:
+
+- Calendar-style timetable grid in frontend
+- Override API for assignment timeslot changes
+- Conflict-highlighted UI cells using validation results
+- Run-scoped timetable loading
+
+## Backend Updates
+
+- Updated `backend/app/routes/timetable.py`:
+  - `GET /timetable/?run_id=<id>` (run-scoped list)
+  - `GET /timetable/timeslots`
+  - `POST /timetable/override`
+- Updated `backend/app/services/timetable_generator.py`:
+  - `override_assignment(...)` with hard constraint checks
+
+## Frontend Updates
+
+- Updated `frontend/src/App.js`:
+  - Calendar grid (day x slot)
+  - Override controls (select assignment + target timeslot)
+  - Conflict summary panel and cell-level highlighting
