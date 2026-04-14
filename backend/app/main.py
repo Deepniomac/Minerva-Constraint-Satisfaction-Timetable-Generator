@@ -12,6 +12,7 @@ from app.models.timeslot import TimeSlot
 from app.models.assignment import Assignment
 from app.models.preference import Preference
 from app.models.semester import Semester
+from app.models.timetable_run import TimetableRun
 
 from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable
 
@@ -35,6 +36,13 @@ def _run_lightweight_schema_updates() -> None:
         if "role" not in user_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'student' NOT NULL"))
+    if "assignments" in inspector.get_table_names():
+        assignment_cols = {col["name"] for col in inspector.get_columns("assignments")}
+        with engine.begin() as conn:
+            if "semester_id" not in assignment_cols:
+                conn.execute(text("ALTER TABLE assignments ADD COLUMN semester_id INTEGER"))
+            if "run_id" not in assignment_cols:
+                conn.execute(text("ALTER TABLE assignments ADD COLUMN run_id INTEGER"))
 
 
 _run_lightweight_schema_updates()

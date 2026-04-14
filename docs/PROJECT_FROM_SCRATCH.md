@@ -92,9 +92,12 @@ Minerva automates timetable setup for institutions by replacing manual spreadshe
 
 ## 8) Known Gaps (Next Phases)
 
-- Real CSP solver (current generator is draft/simple)
-- Conflict detection engine
+Completed in Phase 2:
+- Conflict detection validation endpoint
+- Semester-aware run versioning and publish workflow
+
+Open gaps:
+- Advanced CSP optimization objective functions
 - Drag-and-drop timetable editor
 - Utilization analytics dashboards
 - Export/reporting, notifications, audit trail
-- Semester-aware timetable versioning and publish workflow

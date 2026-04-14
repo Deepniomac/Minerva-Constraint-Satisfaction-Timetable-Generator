@@ -1,6 +1,6 @@
 # Minerva Constraint Satisfaction Timetable Generator
 
-Phase 1 foundation for a timetable automation platform aligned to the PRD.
+Phase 1 and Phase 2 foundation for a timetable automation platform aligned to the PRD.
 
 ## Repository Structure
 
@@ -41,6 +41,18 @@ npm start
 - `CRUD /semesters`
 - `POST /timetable/generate`
 - `GET /timetable/`
+
+## Phase 2 Endpoints
+
+- `POST /timetable/validate`
+- `POST /timetable/publish`
+- `GET /timetable/runs`
+
+## Phase 2 Highlights
+
+- Constraint-aware draft generation with hard conflict prevention rules
+- Validation endpoint for run-level conflict checks before publish
+- Timetable run lifecycle with `draft/published` status, `version`, and `semester_id`
 
 ## Documentation
 

@@ -11,6 +11,8 @@ export default function App() {
   const [message, setMessage] = useState("Login to manage Phase 1 entities.");
   const [nameInput, setNameInput] = useState("");
   const [deptInput, setDeptInput] = useState("");
+  const [semesterInput, setSemesterInput] = useState("");
+  const [runIdInput, setRunIdInput] = useState("");
   const [rows, setRows] = useState([]);
 
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
@@ -66,10 +68,47 @@ export default function App() {
 
   async function generateTimetable() {
     try {
-      const res = await axios.post(`${API_BASE}/timetable/generate`, {}, { headers: authHeaders });
-      setMessage(`${res.data.message} (${res.data.total_assignments || 0})`);
+      const qs = semesterInput ? `?semester_id=${encodeURIComponent(semesterInput)}` : "";
+      const res = await axios.post(`${API_BASE}/timetable/generate${qs}`, {}, { headers: authHeaders });
+      setRows(res.data);
+      setMessage(`${res.data.message} | run=${res.data.run_id} | version=${res.data.version}`);
     } catch (error) {
       setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Generation failed");
+    }
+  }
+
+  async function validateRun() {
+    try {
+      const qs = runIdInput ? `?run_id=${encodeURIComponent(runIdInput)}` : "";
+      const res = await axios.post(`${API_BASE}/timetable/validate${qs}`, {}, { headers: authHeaders });
+      setRows(res.data);
+      setMessage(res.data.is_valid ? "Validation passed: no hard conflicts." : "Validation found conflicts.");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Validation failed");
+    }
+  }
+
+  async function publishRun() {
+    try {
+      if (!runIdInput) {
+        setMessage("Enter run ID to publish.");
+        return;
+      }
+      const res = await axios.post(`${API_BASE}/timetable/publish?run_id=${encodeURIComponent(runIdInput)}`, {}, { headers: authHeaders });
+      setRows(res.data);
+      setMessage(`Run ${runIdInput} published.`);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Publish failed");
+    }
+  }
+
+  async function listRuns() {
+    try {
+      const res = await axios.get(`${API_BASE}/timetable/runs`, { headers: authHeaders });
+      setRows(res.data || []);
+      setMessage("Timetable runs loaded.");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load runs");
     }
   }
 
@@ -77,7 +116,7 @@ export default function App() {
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: 24, fontFamily: "Arial" }}>
-      <h1>Minerva Phase 1 Console</h1>
+      <h1>Minerva Phase 2 Console</h1>
       <p>{message}</p>
 
       <section style={{ marginBottom: 16 }}>
@@ -99,6 +138,29 @@ export default function App() {
         <button style={{ marginLeft: 8 }} onClick={generateTimetable}>
           Generate Timetable
         </button>
+        <button style={{ marginLeft: 8 }} onClick={validateRun}>
+          Validate Run
+        </button>
+        <button style={{ marginLeft: 8 }} onClick={listRuns}>
+          List Runs
+        </button>
+        <button style={{ marginLeft: 8 }} onClick={publishRun}>
+          Publish Run
+        </button>
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <input
+          placeholder="semester id (optional for generate)"
+          value={semesterInput}
+          onChange={(e) => setSemesterInput(e.target.value)}
+        />
+        <input
+          style={{ marginLeft: 8 }}
+          placeholder="run id (for validate/publish)"
+          value={runIdInput}
+          onChange={(e) => setRunIdInput(e.target.value)}
+        />
       </section>
 
       {isAdminLike && (
