@@ -13,8 +13,10 @@ from app.models.assignment import Assignment
 from app.models.preference import Preference
 from app.models.semester import Semester
 from app.models.timetable_run import TimetableRun
+from app.models.audit_log import AuditLog
+from app.models.notification import Notification
 
-from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable
+from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports
 
 app = FastAPI(title="Minerva Timetable API")
 
@@ -55,6 +57,9 @@ app.include_router(rooms.router)
 app.include_router(timeslots.router)
 app.include_router(semesters.router)
 app.include_router(timetable.router)
+app.include_router(notifications.router)
+app.include_router(audit.router)
+app.include_router(reports.router)
 
 
 @app.get("/")

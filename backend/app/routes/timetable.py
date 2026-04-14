@@ -5,14 +5,33 @@ from app.dependencies import require_roles
 from app.models.assignment import Assignment
 from app.models.timeslot import TimeSlot
 from app.models.timetable_run import TimetableRun
+from app.services.ops import notify, write_audit
 from app.services.timetable_generator import generate_timetable, override_assignment, publish_timetable, validate_current_run
 
 router = APIRouter(prefix="/timetable", tags=["timetable"])
 
 
 @router.post("/generate")
-def generate(semester_id: int | None = None, db: Session = Depends(get_db), _user=Depends(require_roles("admin", "department_head"))):
-    return generate_timetable(db, semester_id=semester_id)
+def generate(semester_id: int | None = None, db: Session = Depends(get_db), current_user=Depends(require_roles("admin", "department_head"))):
+    result = generate_timetable(db, semester_id=semester_id)
+    if "run_id" in result:
+        write_audit(
+            db,
+            action="timetable_generate",
+            entity_type="timetable_run",
+            entity_id=str(result["run_id"]),
+            actor_username=current_user.get("username"),
+            actor_role=current_user.get("role"),
+            meta={"semester_id": result.get("semester_id"), "version": result.get("version")},
+        )
+        notify(
+            db,
+            title="Timetable draft generated",
+            message=f'Run #{result["run_id"]} generated (v{result.get("version")}).',
+            kind="success",
+        )
+        db.commit()
+    return result
 
 
 @router.post("/validate")
@@ -21,8 +40,26 @@ def validate(run_id: int | None = None, db: Session = Depends(get_db), _user=Dep
 
 
 @router.post("/publish")
-def publish(run_id: int, db: Session = Depends(get_db), _user=Depends(require_roles("admin", "department_head"))):
-    return publish_timetable(db, run_id)
+def publish(run_id: int, db: Session = Depends(get_db), current_user=Depends(require_roles("admin", "department_head"))):
+    result = publish_timetable(db, run_id)
+    if not result.get("error"):
+        write_audit(
+            db,
+            action="timetable_publish",
+            entity_type="timetable_run",
+            entity_id=str(run_id),
+            actor_username=current_user.get("username"),
+            actor_role=current_user.get("role"),
+            meta={"status": result.get("status")},
+        )
+        notify(
+            db,
+            title="Timetable published",
+            message=f"Run #{run_id} is now published.",
+            kind="success",
+        )
+        db.commit()
+    return result
 
 
 @router.get("/")
@@ -88,12 +125,30 @@ def override_entry(
     room_id: int | None = None,
     faculty_id: int | None = None,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles("admin", "department_head")),
+    current_user=Depends(require_roles("admin", "department_head")),
 ):
-    return override_assignment(
+    result = override_assignment(
         db,
         assignment_id=assignment_id,
         timeslot_id=timeslot_id,
         room_id=room_id,
         faculty_id=faculty_id,
     )
+    if not result.get("error"):
+        write_audit(
+            db,
+            action="timetable_override",
+            entity_type="assignment",
+            entity_id=str(assignment_id),
+            actor_username=current_user.get("username"),
+            actor_role=current_user.get("role"),
+            meta={"timeslot_id": timeslot_id, "room_id": room_id, "faculty_id": faculty_id},
+        )
+        notify(
+            db,
+            title="Timetable entry updated",
+            message=f"Assignment #{assignment_id} was manually updated.",
+            kind="info",
+        )
+        db.commit()
+    return result

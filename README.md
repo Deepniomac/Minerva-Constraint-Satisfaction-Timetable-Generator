@@ -1,6 +1,6 @@
 # Minerva Constraint Satisfaction Timetable Generator
 
-Phase 1 and Phase 2 foundation for a timetable automation platform aligned to the PRD.
+Phase 1 to Phase 4 foundation for a timetable automation platform aligned to the PRD.
 
 ## Repository Structure
 
@@ -60,6 +60,15 @@ npm start
 - Manual override endpoint for moving assignments between timeslots
 - Conflict-highlighted cells driven by validation output
 - Run-specific timetable loading for draft review and edit workflows
+
+## Phase 4 Highlights
+
+- Audit log API for schedule and lifecycle actions
+- Notifications API (broadcast + per-user read)
+- Report APIs:
+  - `GET /reports/run-summary`
+  - `GET /reports/run-export.csv`
+- Timetable actions now emit audit + notification records
 
 ## Documentation
 

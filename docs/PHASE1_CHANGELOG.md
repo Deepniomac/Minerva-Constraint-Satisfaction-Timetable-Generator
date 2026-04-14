@@ -109,3 +109,44 @@ Implemented timetable review/edit UI and manual override flow:
   - Calendar grid (day x slot)
   - Override controls (select assignment + target timeslot)
   - Conflict summary panel and cell-level highlighting
+
+---
+
+# Phase 4 Changelog
+
+## Date
+
+2026-04-14
+
+## Summary
+
+Implemented audit, notifications, and reporting workflows:
+
+- Added audit log capture for timetable generate/publish/override actions
+- Added notification records for publish/update events
+- Added run summary and CSV export reports
+- Added frontend controls to fetch notifications, audit logs, and report summary/export
+
+## Backend Updates
+
+- Added models:
+  - `backend/app/models/audit_log.py`
+  - `backend/app/models/notification.py`
+- Added service:
+  - `backend/app/services/ops.py`
+- Added routes:
+  - `backend/app/routes/audit.py`
+  - `backend/app/routes/notifications.py`
+  - `backend/app/routes/reports.py`
+- Updated timetable route to emit audit + notifications:
+  - `backend/app/routes/timetable.py`
+- Registered new routers in app:
+  - `backend/app/main.py`
+
+## Frontend Updates
+
+- Updated `frontend/src/App.js`:
+  - Notifications loader
+  - Audit log loader
+  - Run summary loader
+  - CSV report download trigger

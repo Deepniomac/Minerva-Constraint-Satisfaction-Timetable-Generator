@@ -16,6 +16,9 @@ export default function App() {
   const [runIdInput, setRunIdInput] = useState("");
   const [rows, setRows] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [auditRows, setAuditRows] = useState([]);
+  const [runSummary, setRunSummary] = useState(null);
   const [timeslots, setTimeslots] = useState([]);
   const [validation, setValidation] = useState(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
@@ -120,6 +123,42 @@ export default function App() {
     }
   }
 
+  async function loadNotifications() {
+    try {
+      const res = await axios.get(`${API_BASE}/notifications/`, { headers: authHeaders });
+      setNotifications(res.data || []);
+      setMessage(`Notifications loaded (${(res.data || []).length}).`);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load notifications");
+    }
+  }
+
+  async function loadAudit() {
+    try {
+      const res = await axios.get(`${API_BASE}/audit/?limit=100`, { headers: authHeaders });
+      setAuditRows(res.data || []);
+      setMessage(`Audit logs loaded (${(res.data || []).length}).`);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load audit logs");
+    }
+  }
+
+  async function loadRunSummary() {
+    try {
+      if (!runIdInput) return setMessage("Enter run id for summary.");
+      const res = await axios.get(`${API_BASE}/reports/run-summary?run_id=${encodeURIComponent(runIdInput)}`, { headers: authHeaders });
+      setRunSummary(res.data);
+      setMessage("Run summary loaded.");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load run summary");
+    }
+  }
+
+  function downloadRunCsv() {
+    if (!runIdInput) return setMessage("Enter run id for CSV export.");
+    window.open(`${API_BASE}/reports/run-export.csv?run_id=${encodeURIComponent(runIdInput)}`, "_blank");
+  }
+
   async function loadRunTimetable(runId = runIdInput) {
     try {
       const qs = runId ? `?run_id=${encodeURIComponent(runId)}` : "";
@@ -179,6 +218,10 @@ export default function App() {
             <button className="btn" onClick={() => loadRunTimetable(runIdInput)}>Load</button>
             <button className="btn btn-primary" onClick={publishRun}>Publish</button>
             <button className="btn" onClick={loadTimeslots}>Timeslots</button>
+            <button className="btn" onClick={loadNotifications}>Notifications</button>
+            <button className="btn" onClick={loadAudit}>Audit</button>
+            <button className="btn" onClick={loadRunSummary}>Summary</button>
+            <button className="btn" onClick={downloadRunCsv}>CSV</button>
           </div>
         </div>
 
@@ -277,6 +320,21 @@ export default function App() {
         <div className="card">
           <h3>Validation Details</h3>
           <pre className="json-box">{JSON.stringify(validation || { info: "Run validate to view conflicts" }, null, 2)}</pre>
+        </div>
+
+        <div className="card">
+          <h3>Run Summary</h3>
+          <pre className="json-box">{JSON.stringify(runSummary || { info: "Load Summary to view run metrics" }, null, 2)}</pre>
+        </div>
+
+        <div className="card">
+          <h3>Notifications</h3>
+          <pre className="json-box">{JSON.stringify(notifications, null, 2)}</pre>
+        </div>
+
+        <div className="card">
+          <h3>Audit Logs</h3>
+          <pre className="json-box">{JSON.stringify(auditRows, null, 2)}</pre>
         </div>
       </section>
     </main>
