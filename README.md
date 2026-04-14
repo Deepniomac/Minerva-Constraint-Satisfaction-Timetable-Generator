@@ -70,7 +70,18 @@ npm start
   - `GET /reports/run-export.csv`
 - Timetable actions now emit audit + notification records
 
+## Phase 5 Highlights
+
+- Env-based security/config management:
+  - JWT secret and expiry from environment
+  - CORS origins from environment
+- Added token expiration support
+- Added health endpoint: `GET /health`
+- Added `.env.example` for reproducible setup
+- Added full run guide: `docs/RUN_FROM_SCRATCH.md`
+
 ## Documentation
 
 - `docs/PROJECT_FROM_SCRATCH.md`
 - `docs/PHASE1_CHANGELOG.md`
+- `docs/RUN_FROM_SCRATCH.md`

@@ -150,3 +150,36 @@ Implemented audit, notifications, and reporting workflows:
   - Audit log loader
   - Run summary loader
   - CSV report download trigger
+
+---
+
+# Phase 5 Changelog
+
+## Date
+
+2026-04-14
+
+## Summary
+
+Implemented final hardening and runbook documentation:
+
+- Moved JWT and CORS configuration to environment-based settings
+- Added JWT expiration configuration support
+- Added backend health endpoint
+- Added reproducible backend environment template
+- Added complete from-scratch setup and run documentation
+
+## Backend Updates
+
+- Added `backend/app/config.py`
+- Updated:
+  - `backend/app/auth.py`
+  - `backend/app/dependencies.py`
+  - `backend/app/main.py`
+  - `backend/requirements.txt`
+- Added `backend/.env.example`
+
+## Documentation Updates
+
+- Added `docs/RUN_FROM_SCRATCH.md`
+- Updated `README.md`

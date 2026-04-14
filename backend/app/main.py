@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
+from app.config import CORS_ALLOW_ORIGINS
 from app.database import Base, engine
 from app.models.user import User
 from app.models.department import Department
@@ -22,7 +23,7 @@ app = FastAPI(title="Minerva Timetable API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,3 +66,8 @@ app.include_router(reports.router)
 @app.get("/")
 def root():
     return {"message": "Minerva Backend Running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
