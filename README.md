@@ -80,6 +80,68 @@ npm start
 - Added `.env.example` for reproducible setup
 - Added full run guide: `docs/RUN_FROM_SCRATCH.md`
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+    U[User]
+    FE[Frontend React App\nDashboard + Calendar + Admin Controls]
+    API[FastAPI Backend]
+    AUTH[Auth + RBAC\nJWT]
+    TT[Timetable Engine\nGenerate Validate Publish Override]
+    OPS[Ops Services\nAudit + Notifications]
+    RPT[Reports Service\nRun Summary + CSV Export]
+    DB[(SQLite / SQL Database)]
+
+    U --> FE
+    FE -->|HTTP/JSON| API
+
+    API --> AUTH
+    API --> TT
+    API --> OPS
+    API --> RPT
+
+    AUTH --> DB
+    TT --> DB
+    OPS --> DB
+    RPT --> DB
+
+    FE -->|Download CSV| RPT
+```
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant FE as Frontend
+    participant API as FastAPI
+    participant TT as Timetable Engine
+    participant DB as Database
+    participant OPS as Audit/Notification
+
+    User->>FE: Click Generate
+    FE->>API: POST /timetable/generate
+    API->>TT: generate_timetable()
+    TT->>DB: Create TimetableRun + Assignments
+    TT-->>API: run_id, version, validation
+    API->>OPS: write_audit + notify
+    OPS->>DB: Save audit_logs + notifications
+    API-->>FE: Draft generation response
+
+    User->>FE: Click Validate
+    FE->>API: POST /timetable/validate?run_id
+    API->>TT: validate_current_run()
+    TT->>DB: Read assignments/timeslots
+    API-->>FE: is_valid + conflicts
+
+    User->>FE: Click Publish
+    FE->>API: POST /timetable/publish?run_id
+    API->>TT: publish_timetable()
+    TT->>DB: Update status=published
+    API->>OPS: write_audit + notify
+    OPS->>DB: Save records
+    API-->>FE: publish result
+```
+
 ## Documentation
 
 - `docs/PROJECT_FROM_SCRATCH.md`
