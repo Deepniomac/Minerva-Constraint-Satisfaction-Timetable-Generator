@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import axios from "axios";
+import "./App.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -8,7 +9,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [role, setRole] = useState(localStorage.getItem("role") || "");
-  const [message, setMessage] = useState("Login to manage Phase 1 entities.");
+  const [message, setMessage] = useState("Login to manage timetables.");
   const [nameInput, setNameInput] = useState("");
   const [deptInput, setDeptInput] = useState("");
   const [semesterInput, setSemesterInput] = useState("");
@@ -18,7 +19,6 @@ export default function App() {
   const [validation, setValidation] = useState(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
   const [overrideTimeslotId, setOverrideTimeslotId] = useState("");
-
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   async function login() {
@@ -66,11 +66,7 @@ export default function App() {
 
   async function createFaculty() {
     try {
-      await axios.post(
-        `${API_BASE}/faculty/?name=${encodeURIComponent(nameInput)}&dept_id=${encodeURIComponent(deptInput)}`,
-        {},
-        { headers: authHeaders }
-      );
+      await axios.post(`${API_BASE}/faculty/?name=${encodeURIComponent(nameInput)}&dept_id=${encodeURIComponent(deptInput)}`, {}, { headers: authHeaders });
       setMessage("Faculty created");
       setNameInput("");
       setDeptInput("");
@@ -105,12 +101,8 @@ export default function App() {
 
   async function publishRun() {
     try {
-      if (!runIdInput) {
-        setMessage("Enter run ID to publish.");
-        return;
-      }
-      const res = await axios.post(`${API_BASE}/timetable/publish?run_id=${encodeURIComponent(runIdInput)}`, {}, { headers: authHeaders });
-      setRows(res.data);
+      if (!runIdInput) return setMessage("Enter run ID to publish.");
+      await axios.post(`${API_BASE}/timetable/publish?run_id=${encodeURIComponent(runIdInput)}`, {}, { headers: authHeaders });
       setMessage(`Run ${runIdInput} published.`);
     } catch (error) {
       setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Publish failed");
@@ -140,10 +132,7 @@ export default function App() {
 
   async function overrideEntry() {
     try {
-      if (!selectedAssignmentId || !overrideTimeslotId) {
-        setMessage("Select assignment and target timeslot.");
-        return;
-      }
+      if (!selectedAssignmentId || !overrideTimeslotId) return setMessage("Select assignment and target timeslot.");
       const res = await axios.post(
         `${API_BASE}/timetable/override?assignment_id=${encodeURIComponent(selectedAssignmentId)}&timeslot_id=${encodeURIComponent(overrideTimeslotId)}`,
         {},
@@ -159,185 +148,124 @@ export default function App() {
 
   const isAdminLike = role === "admin" || role === "department_head";
   const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const orderedDays = useMemo(() => {
-    const unique = Array.from(new Set(rows.map((r) => r.day).filter(Boolean)));
-    return unique.sort((a, b) => {
-      const ia = dayOrder.indexOf(a);
-      const ib = dayOrder.indexOf(b);
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-    });
-  }, [rows]);
-  const orderedSlots = useMemo(() => {
-    const unique = Array.from(new Set(rows.map((r) => r.time).filter(Boolean)));
-    return unique.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
-  }, [rows]);
-  const conflictCells = useMemo(() => {
-    const map = new Set();
-    const conflicts = validation?.conflicts || [];
-    for (const c of conflicts) map.add(`${c.day}__${c.slot}`);
-    return map;
-  }, [validation]);
-  const cellMap = useMemo(() => {
-    const m = new Map();
-    for (const r of rows) m.set(`${r.day}__${r.time}`, r);
-    return m;
-  }, [rows]);
+  const orderedDays = useMemo(() => Array.from(new Set(rows.map((r) => r.day).filter(Boolean))).sort((a, b) => (dayOrder.indexOf(a) === -1 ? 99 : dayOrder.indexOf(a)) - (dayOrder.indexOf(b) === -1 ? 99 : dayOrder.indexOf(b))), [rows]);
+  const orderedSlots = useMemo(() => Array.from(new Set(rows.map((r) => r.time).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true })), [rows]);
+  const conflictCells = useMemo(() => new Set((validation?.conflicts || []).map((c) => `${c.day}__${c.slot}`)), [validation]);
+  const cellMap = useMemo(() => new Map(rows.map((r) => [`${r.day}__${r.time}`, r])), [rows]);
 
   return (
-    <main style={{ maxWidth: 1200, margin: "0 auto", padding: 24, fontFamily: "Arial" }}>
-      <h1>Minerva Phase 3 Console</h1>
-      <p>{message}</p>
+    <main className="app-shell">
+      <aside className="left-panel">
+        <h1>Minerva</h1>
+        <p className="muted">Project Details & Schedule</p>
+        <div className="status-pill">{message}</div>
 
-      <section style={{ marginBottom: 16 }}>
-        <input placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input
-          style={{ marginLeft: 8 }}
-          placeholder="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button style={{ marginLeft: 8 }} onClick={login}>
-          Login
-        </button>
-      </section>
+        <div className="card">
+          <h3>Login</h3>
+          <input className="field" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input className="field" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="btn btn-primary" onClick={login}>Login</button>
+        </div>
 
-      <section style={{ marginBottom: 16 }}>
-        <button onClick={listDepartments}>List Departments</button>
-        <button style={{ marginLeft: 8 }} onClick={generateTimetable}>
-          Generate Timetable
-        </button>
-        <button style={{ marginLeft: 8 }} onClick={validateRun}>
-          Validate Run
-        </button>
-        <button style={{ marginLeft: 8 }} onClick={listRuns}>
-          List Runs
-        </button>
-        <button style={{ marginLeft: 8 }} onClick={() => loadRunTimetable(runIdInput)}>
-          Load Timetable
-        </button>
-        <button style={{ marginLeft: 8 }} onClick={publishRun}>
-          Publish Run
-        </button>
-      </section>
-
-      <section style={{ marginBottom: 16 }}>
-        <input
-          placeholder="semester id (optional for generate)"
-          value={semesterInput}
-          onChange={(e) => setSemesterInput(e.target.value)}
-        />
-        <input
-          style={{ marginLeft: 8 }}
-          placeholder="run id (for validate/publish)"
-          value={runIdInput}
-          onChange={(e) => setRunIdInput(e.target.value)}
-        />
-        <button style={{ marginLeft: 8 }} onClick={loadTimeslots}>
-          Load Timeslots
-        </button>
-      </section>
-
-      {isAdminLike && (
-        <section style={{ marginBottom: 16 }}>
-          <h3>Admin / Dept Head Actions</h3>
-          <input placeholder="name" value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
-          <input
-            style={{ marginLeft: 8 }}
-            placeholder="dept id (for faculty)"
-            value={deptInput}
-            onChange={(e) => setDeptInput(e.target.value)}
-          />
-          <div style={{ marginTop: 8 }}>
-            <button onClick={createDepartment}>Create Department</button>
-            <button style={{ marginLeft: 8 }} onClick={createFaculty}>
-              Create Faculty
-            </button>
+        <div className="card">
+          <h3>Run Controls</h3>
+          <input className="field" placeholder="Semester id (optional)" value={semesterInput} onChange={(e) => setSemesterInput(e.target.value)} />
+          <input className="field" placeholder="Run id" value={runIdInput} onChange={(e) => setRunIdInput(e.target.value)} />
+          <div className="btn-grid">
+            <button className="btn" onClick={generateTimetable}>Generate</button>
+            <button className="btn" onClick={validateRun}>Validate</button>
+            <button className="btn" onClick={listRuns}>Runs</button>
+            <button className="btn" onClick={() => loadRunTimetable(runIdInput)}>Load</button>
+            <button className="btn btn-primary" onClick={publishRun}>Publish</button>
+            <button className="btn" onClick={loadTimeslots}>Timeslots</button>
           </div>
-        </section>
-      )}
+        </div>
 
-      {isAdminLike && (
-        <section style={{ marginBottom: 16, border: "1px solid #ddd", padding: 12 }}>
-          <h3>Manual Override</h3>
-          <select value={selectedAssignmentId} onChange={(e) => setSelectedAssignmentId(e.target.value)}>
-            <option value="">Select assignment</option>
-            {rows.map((r) => (
-              <option key={r.assignment_id} value={r.assignment_id}>
-                #{r.assignment_id} {r.course} ({r.day} {r.time})
-              </option>
-            ))}
-          </select>
-          <select style={{ marginLeft: 8 }} value={overrideTimeslotId} onChange={(e) => setOverrideTimeslotId(e.target.value)}>
-            <option value="">Target timeslot</option>
-            {timeslots.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.day} {t.slot}
-              </option>
-            ))}
-          </select>
-          <button style={{ marginLeft: 8 }} onClick={overrideEntry}>
-            Apply Override
-          </button>
-        </section>
-      )}
+        {isAdminLike && (
+          <div className="card">
+            <h3>Admin Actions</h3>
+            <input className="field" placeholder="Name" value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
+            <input className="field" placeholder="Dept id (faculty)" value={deptInput} onChange={(e) => setDeptInput(e.target.value)} />
+            <div className="btn-grid two">
+              <button className="btn" onClick={createDepartment}>Create Department</button>
+              <button className="btn" onClick={createFaculty}>Create Faculty</button>
+            </div>
+            <button className="btn ghost" onClick={listDepartments}>List Departments</button>
+          </div>
+        )}
+      </aside>
 
-      <section style={{ marginBottom: 16 }}>
-        <h3>Conflict Summary</h3>
-        <pre style={{ background: "#f5f5f5", padding: 12 }}>
-          {JSON.stringify(validation || { info: "Run validate to view conflicts" }, null, 2)}
-        </pre>
-      </section>
+      <section className="main-panel">
+        <div className="panel-header">
+          <h2>Timetable Calendar</h2>
+          <span className={`chip ${validation?.is_valid ? "ok" : "warn"}`}>{validation ? (validation.is_valid ? "No Conflicts" : "Conflicts Found") : "Validation Pending"}</span>
+        </div>
 
-      <section>
-        <h3>Calendar View</h3>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead>
-              <tr>
-                <th style={{ border: "1px solid #ddd", padding: 8 }}>Day / Slot</th>
-                {orderedSlots.map((slot) => (
-                  <th key={slot} style={{ border: "1px solid #ddd", padding: 8 }}>
-                    {slot}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {orderedDays.map((day) => (
-                <tr key={day}>
-                  <td style={{ border: "1px solid #ddd", padding: 8, fontWeight: "bold" }}>{day}</td>
-                  {orderedSlots.map((slot) => {
-                    const key = `${day}__${slot}`;
-                    const entry = cellMap.get(key);
-                    const isConflict = conflictCells.has(key);
-                    return (
-                      <td
-                        key={key}
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: 8,
-                          minWidth: 160,
-                          background: isConflict ? "#ffd6d6" : "#f9f9f9",
-                        }}
-                      >
-                        {entry ? (
-                          <div>
-                            <div style={{ fontWeight: "bold" }}>{entry.course}</div>
-                            <div>{entry.faculty}</div>
-                            <div>{entry.room}</div>
-                            <div style={{ fontSize: 12, color: "#666" }}>#{entry.assignment_id}</div>
-                          </div>
-                        ) : (
-                          <span style={{ color: "#aaa" }}>-</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
+        {isAdminLike && (
+          <div className="card inline">
+            <h3>Manual Override</h3>
+            <select className="field" value={selectedAssignmentId} onChange={(e) => setSelectedAssignmentId(e.target.value)}>
+              <option value="">Select assignment</option>
+              {rows.map((r) => (
+                <option key={r.assignment_id} value={r.assignment_id}>
+                  #{r.assignment_id} {r.course} ({r.day} {r.time})
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+            <select className="field" value={overrideTimeslotId} onChange={(e) => setOverrideTimeslotId(e.target.value)}>
+              <option value="">Target timeslot</option>
+              {timeslots.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.day} {t.slot}
+                </option>
+              ))}
+            </select>
+            <button className="btn btn-primary" onClick={overrideEntry}>Apply</button>
+          </div>
+        )}
+
+        <div className="card table-card">
+          <div className="table-wrap">
+            <table className="schedule-table">
+              <thead>
+                <tr>
+                  <th>Day / Slot</th>
+                  {orderedSlots.map((slot) => <th key={slot}>{slot}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {orderedDays.map((day) => (
+                  <tr key={day}>
+                    <td className="day-cell">{day}</td>
+                    {orderedSlots.map((slot) => {
+                      const key = `${day}__${slot}`;
+                      const entry = cellMap.get(key);
+                      const isConflict = conflictCells.has(key);
+                      return (
+                        <td key={key} className={isConflict ? "slot conflict" : "slot"}>
+                          {entry ? (
+                            <div className="entry">
+                              <div className="entry-title">{entry.course}</div>
+                              <div>{entry.faculty}</div>
+                              <div>{entry.room}</div>
+                              <div className="small">#{entry.assignment_id}</div>
+                            </div>
+                          ) : (
+                            <span className="small">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3>Validation Details</h3>
+          <pre className="json-box">{JSON.stringify(validation || { info: "Run validate to view conflicts" }, null, 2)}</pre>
         </div>
       </section>
     </main>
