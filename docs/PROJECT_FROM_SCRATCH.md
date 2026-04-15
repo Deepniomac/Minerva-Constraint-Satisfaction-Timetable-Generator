@@ -106,6 +106,14 @@ Minerva automates timetable setup for institutions by replacing manual spreadshe
   - Total runs, published/draft split
   - Notification totals/unread
   - Department and faculty counts
+- Resource Hub:
+  - Added `Resource` model and `/resources/*` APIs
+  - Faculty/Admin publish public academic content from frontend
+  - Student has dedicated Resources page for notes/curriculum/announcements
+  - Confidential resources are restricted to admin/backend workflows
+- Role-based frontend signup/signin:
+  - One-click account creation with role selector
+  - Session identity persisted via username/role/token storage
 - Delivery hardening:
   - Added seed script: `backend/scripts/seed_demo.py`
   - Added tests: `backend/tests/test_timetable_validation.py`

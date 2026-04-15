@@ -9,11 +9,13 @@ Minerva helps institutions move from spreadsheet-based scheduling to a guided, r
 - Faculty operate run workflows and manual adjustments.
 - Students consume published schedules with clean read-only controls.
 - Minerva chatbot supports preview+apply workflows for raw command-based data updates.
+- Faculty/Admin can publish public academic resources from frontend.
+- Students can read academic curriculum/notes/announcements from the Resources page.
 
 ## Repository Structure
 
 - `backend` - FastAPI + SQLAlchemy APIs
-- `frontend` - React Phase 1 console
+- `frontend` - React role-aware multi-page web app
 - `docs` - project documentation and implementation records
 
 ## Quick Start
@@ -94,6 +96,18 @@ npm start
 - Added Home dashboard cards for runs, publication status, notifications, and master-data counts
 - Added backend seed script: `backend/scripts/seed_demo.py`
 - Added unit tests for timetable section overlap: `backend/tests/test_timetable_validation.py`
+- Added Resource Hub:
+  - Backend model + APIs for public/confidential resources
+  - Frontend Resources page for student reading
+  - Faculty/Admin publish box for public academic content
+- Added role-based signup/signin UX in frontend with persisted username/role/token
+
+## Resource Hub Endpoints
+
+- `POST /resources/public` (faculty/admin/department_head)
+- `GET /resources/` (student/faculty/admin/department_head)
+- `POST /resources/confidential` (admin-only, backend/manual workflow)
+- `GET /resources/internal` (admin/department_head)
 
 ## Architecture Diagram
 

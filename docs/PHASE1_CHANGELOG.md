@@ -227,3 +227,38 @@ Implemented final ship-ready UX and data-safety upgrades:
 - Updated `frontend/src/App.css`:
   - Added disabled button styling
   - Updated manual layout for section selector
+
+---
+
+# Resource Hub and Auth UX Changelog
+
+## Date
+
+2026-04-15
+
+## Summary
+
+Implemented frontend-driven academic resource management and role-based signup/signin UX:
+
+- Added Resource Hub for publishing and reading academic content
+- Added student-accessible resources page
+- Kept confidential resources restricted to backend/admin workflow
+- Added role-selector account creation in frontend
+
+## Backend Updates
+
+- Added:
+  - `backend/app/models/resource.py`
+  - `backend/app/routes/resources.py`
+- Updated:
+  - `backend/app/main.py` (router/model registration)
+
+## Frontend Updates
+
+- Updated `frontend/src/App.js`:
+  - Sign in + create account boxes
+  - Resources page in role-locked navigation
+  - Faculty/Admin publish-resource box
+  - Student public resource reading view
+- Updated `frontend/src/App.css`:
+  - resource list item styling
