@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
+from pathlib import Path
 
 from app.config import CORS_ALLOW_ORIGINS
-from app.database import Base, engine
+from app.database import Base, engine, SessionLocal
 from app.models.user import User
 from app.models.department import Department
 from app.models.faculty import Faculty
@@ -17,7 +18,8 @@ from app.models.timetable_run import TimetableRun
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 
-from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports
+from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports
+from app.services.csv_importer import import_subjects_csv
 
 app = FastAPI(title="Minerva Timetable API")
 
@@ -61,6 +63,7 @@ app.include_router(timetable.router)
 app.include_router(notifications.router)
 app.include_router(audit.router)
 app.include_router(reports.router)
+app.include_router(imports.router)
 
 
 @app.get("/")
@@ -71,3 +74,20 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.on_event("startup")
+def auto_import_subjects_csv():
+    csv_path = Path(__file__).resolve().parents[1] / "data" / "subjects.csv"
+    db = SessionLocal()
+    try:
+        result = import_subjects_csv(db, csv_path)
+        if result.get("ok"):
+            print(f"[CSV IMPORT] Imported subjects from {csv_path}")
+            print(f"[CSV IMPORT] Stats: {result}")
+        else:
+            print(f"[CSV IMPORT] Skipped: {result.get('reason')}")
+    except Exception as exc:
+        print(f"[CSV IMPORT] Failed: {exc}")
+    finally:
+        db.close()

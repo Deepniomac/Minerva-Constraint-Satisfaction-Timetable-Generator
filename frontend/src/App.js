@@ -23,6 +23,7 @@ export default function App() {
   const [validation, setValidation] = useState(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
   const [overrideTimeslotId, setOverrideTimeslotId] = useState("");
+  const [csvFile, setCsvFile] = useState(null);
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   async function login() {
@@ -170,6 +171,24 @@ export default function App() {
     }
   }
 
+  async function uploadSubjectsCsv() {
+    try {
+      if (!csvFile) return setMessage("Select a CSV file first.");
+      const formData = new FormData();
+      formData.append("file", csvFile);
+      const res = await axios.post(`${API_BASE}/imports/subjects-csv`, formData, {
+        headers: {
+          ...authHeaders,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setMessage(`CSV imported: rows=${res.data.rows_processed}, courses=${res.data.courses_created}, faculty=${res.data.faculty_created}, rooms=${res.data.rooms_created}`);
+      setCsvFile(null);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "CSV upload failed");
+    }
+  }
+
   async function overrideEntry() {
     try {
       if (!selectedAssignmentId || !overrideTimeslotId) return setMessage("Select assignment and target timeslot.");
@@ -245,6 +264,16 @@ export default function App() {
                 ))}
               </div>
             )}
+            <div className="csv-upload-box">
+              <label className="small">Import Subjects CSV</label>
+              <input
+                className="field"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+              />
+              <button className="btn" onClick={uploadSubjectsCsv}>Upload CSV</button>
+            </div>
           </div>
         )}
       </aside>
