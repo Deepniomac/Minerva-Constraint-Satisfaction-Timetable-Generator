@@ -12,10 +12,13 @@ export default function App() {
     student: "student",
   };
   const [activePage, setActivePage] = useState(roleToPage[localStorage.getItem("role")] || "home");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(localStorage.getItem("username") || "");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [role, setRole] = useState(localStorage.getItem("role") || "");
+  const [registerUsername, setRegisterUsername] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerRole, setRegisterRole] = useState("student");
   const [message, setMessage] = useState("Login to manage timetables.");
   const [nameInput, setNameInput] = useState("");
   const [deptInput, setDeptInput] = useState("");
@@ -41,6 +44,10 @@ export default function App() {
   const [manualFacultyId, setManualFacultyId] = useState("");
   const [manualRoomId, setManualRoomId] = useState("");
   const [manualSectionId, setManualSectionId] = useState("");
+  const [resourceTitle, setResourceTitle] = useState("");
+  const [resourceCategory, setResourceCategory] = useState("notes");
+  const [resourceContent, setResourceContent] = useState("");
+  const [resources, setResources] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatPreviewText, setChatPreviewText] = useState("");
@@ -196,13 +203,34 @@ export default function App() {
       const res = await axios.post(`${API_BASE}/login?username=${username}&password=${password}`);
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("role", res.data.role);
+      localStorage.setItem("username", res.data.username);
       setToken(res.data.access_token);
       setRole(res.data.role);
       setActivePage(roleToPage[res.data.role] || "home");
       setMessage(`Logged in as ${res.data.username} (${res.data.role})`);
       await loadDashboard();
+      await loadResources();
     } catch (error) {
       setMessage(error?.response?.data?.detail || "Login failed");
+    }
+  }
+
+  async function register() {
+    try {
+      if (!registerUsername.trim() || !registerPassword.trim()) {
+        return setMessage("Enter username and password to register.");
+      }
+      await axios.post(
+        `${API_BASE}/register?username=${encodeURIComponent(registerUsername.trim())}&password=${encodeURIComponent(registerPassword)}&role=${encodeURIComponent(registerRole)}`
+      );
+      setUsername(registerUsername.trim());
+      setPassword(registerPassword);
+      setMessage(`Account created for ${registerUsername.trim()} as ${registerRole}. You can now sign in.`);
+      setRegisterUsername("");
+      setRegisterPassword("");
+      setRegisterRole("student");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Registration failed");
     }
   }
 
@@ -267,6 +295,40 @@ export default function App() {
       });
     } catch (_error) {
       setDashboard(null);
+    }
+  }
+
+  async function loadResources() {
+    try {
+      const res = await axios.get(`${API_BASE}/resources/`, { headers: authHeaders });
+      setResources(res.data || []);
+      setMessage(`Resources loaded (${(res.data || []).length}).`);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load resources");
+    }
+  }
+
+  async function createResource() {
+    try {
+      if (!resourceTitle.trim() || !resourceContent.trim()) {
+        return setMessage("Enter title and content for resource.");
+      }
+      await axios.post(
+        `${API_BASE}/resources/public`,
+        {
+          title: resourceTitle.trim(),
+          category: resourceCategory,
+          content: resourceContent.trim(),
+        },
+        { headers: authHeaders }
+      );
+      setMessage("Resource published.");
+      setResourceTitle("");
+      setResourceContent("");
+      setResourceCategory("notes");
+      await loadResources();
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to publish resource");
     }
   }
 
@@ -474,12 +536,13 @@ export default function App() {
   }
 
   const isAdminLike = role === "admin" || role === "department_head";
+  const isFacultyLike = role === "faculty" || isAdminLike;
   const isLoggedIn = Boolean(token);
   const rolePages = {
-    admin: ["home", "admin", "faculty", "student"],
-    department_head: ["home", "admin", "faculty", "student"],
-    faculty: ["home", "faculty", "student"],
-    student: ["home", "student"],
+    admin: ["home", "admin", "faculty", "student", "resources"],
+    department_head: ["home", "admin", "faculty", "student", "resources"],
+    faculty: ["home", "faculty", "student", "resources"],
+    student: ["home", "student", "resources"],
   };
   const allowedPages = isLoggedIn ? (rolePages[role] || ["home"]) : ["home"];
 
@@ -491,11 +554,13 @@ export default function App() {
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("username");
     setToken("");
     setRole("");
     setActivePage("home");
-    setMessage("Logged out.");
+      setMessage("Logged out.");
     setDashboard(null);
+      setResources([]);
   }
   const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const orderedDays = useMemo(() => {
@@ -520,6 +585,7 @@ export default function App() {
           {allowedPages.includes("student") && <button className={`btn ${activePage === "student" ? "btn-primary" : ""}`} onClick={() => setPage("student")}>Student</button>}
           {allowedPages.includes("faculty") && <button className={`btn ${activePage === "faculty" ? "btn-primary" : ""}`} onClick={() => setPage("faculty")}>Faculty</button>}
           {allowedPages.includes("admin") && <button className={`btn ${activePage === "admin" ? "btn-primary" : ""}`} onClick={() => setPage("admin")}>Admin</button>}
+          {allowedPages.includes("resources") && <button className={`btn ${activePage === "resources" ? "btn-primary" : ""}`} onClick={() => setPage("resources")}>Resources</button>}
           {isLoggedIn && <button className="btn" onClick={logout}>Logout</button>}
         </div>
       </header>
@@ -530,12 +596,39 @@ export default function App() {
         <div className="status-pill">{message}</div>
 
         {!isLoggedIn && (
-        <div className="card">
-          <h3>Login</h3>
-          <input className="field" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input className="field" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="btn btn-primary" onClick={login}>Login</button>
-        </div>
+          <>
+            <div className="card">
+              <h3>Sign In</h3>
+              <input className="field" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+              <input className="field" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button className="btn btn-primary" onClick={login}>Sign In</button>
+            </div>
+
+            <div className="card">
+              <h3>Create Account</h3>
+              <input
+                className="field"
+                placeholder="New username"
+                value={registerUsername}
+                onChange={(e) => setRegisterUsername(e.target.value)}
+              />
+              <input
+                className="field"
+                type="password"
+                placeholder="New password"
+                value={registerPassword}
+                onChange={(e) => setRegisterPassword(e.target.value)}
+              />
+              <select className="field" value={registerRole} onChange={(e) => setRegisterRole(e.target.value)}>
+                <option value="student">student</option>
+                <option value="faculty">faculty</option>
+                <option value="department_head">department_head</option>
+                <option value="admin">admin</option>
+              </select>
+              <p className="small">Choose role and create account. Credentials are stored securely in backend DB.</p>
+              <button className="btn" onClick={register}>Create Account</button>
+            </div>
+          </>
         )}
 
         {isLoggedIn && activePage === "student" && (
@@ -746,6 +839,57 @@ export default function App() {
               </>
             )}
           </div>
+        )}
+
+        {activePage === "resources" && (
+          <>
+            <div className="panel-header">
+              <h2>Academic Resource Hub</h2>
+              <span className="chip ok">Student Accessible</span>
+            </div>
+            <div className="card">
+              <p className="small">Students can read all public academic resources. Confidential material is backend/manual only.</p>
+              <button className="btn" onClick={loadResources}>Refresh Resources</button>
+            </div>
+            {isFacultyLike && (
+              <div className="card">
+                <h3>Publish Resource (Faculty/Admin)</h3>
+                <input className="field" placeholder="Title (e.g., Unit 2 Notes)" value={resourceTitle} onChange={(e) => setResourceTitle(e.target.value)} />
+                <select className="field" value={resourceCategory} onChange={(e) => setResourceCategory(e.target.value)}>
+                  <option value="notes">notes</option>
+                  <option value="curriculum">curriculum</option>
+                  <option value="announcement">announcement</option>
+                  <option value="reference">reference</option>
+                </select>
+                <textarea
+                  className="field"
+                  placeholder="Paste syllabus, notes, topics, or reading guidance..."
+                  value={resourceContent}
+                  onChange={(e) => setResourceContent(e.target.value)}
+                  rows={6}
+                />
+                <button className="btn btn-primary" onClick={createResource}>Publish Public Resource</button>
+              </div>
+            )}
+            <div className="card">
+              <h3>Published Resources</h3>
+              {resources.length === 0 ? (
+                <p className="small">No resources yet. Faculty/Admin can publish from this page.</p>
+              ) : (
+                <div className="list-box">
+                  {resources.map((r) => (
+                    <div key={r.id} className="list-item resource-item">
+                      <div>
+                        <div><strong>{r.title}</strong> <span className="small">[{r.category}]</span></div>
+                        <div className="small">By {r.uploaded_by_username || "faculty/admin"} ({r.uploaded_by_role || "role"})</div>
+                        <div>{r.content}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {(activePage === "student" || activePage === "faculty" || activePage === "admin") && (

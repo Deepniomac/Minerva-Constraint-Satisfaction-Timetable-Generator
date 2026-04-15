@@ -234,6 +234,11 @@
   color: var(--text-main);
 }
 
+.resource-item {
+  display: block;
+  line-height: 1.5;
+}
+
 .list-item:last-child { border-bottom: none; }
 
 .csv-upload-box {
