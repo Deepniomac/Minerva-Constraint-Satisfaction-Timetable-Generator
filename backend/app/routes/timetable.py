@@ -5,6 +5,7 @@ from app.dependencies import require_roles
 from app.models.course import Course
 from app.models.faculty import Faculty
 from app.models.room import Room
+from app.models.section import Section
 from app.models.assignment import Assignment
 from app.models.timeslot import TimeSlot
 from app.models.timetable_run import TimetableRun
@@ -61,6 +62,7 @@ def manual_assign(
     faculty_id: int,
     room_id: int,
     timeslot_id: int,
+    section_id: int | None = None,
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin", "department_head")),
 ):
@@ -70,6 +72,7 @@ def manual_assign(
         course_id=course_id,
         faculty_id=faculty_id,
         room_id=room_id,
+        section_id=section_id,
         timeslot_id=timeslot_id,
     )
     if not result.get("error"):
@@ -80,7 +83,14 @@ def manual_assign(
             entity_id=str(result.get("assignment_id")),
             actor_username=current_user.get("username"),
             actor_role=current_user.get("role"),
-            meta={"run_id": run_id, "course_id": course_id, "faculty_id": faculty_id, "room_id": room_id, "timeslot_id": timeslot_id},
+            meta={
+                "run_id": run_id,
+                "course_id": course_id,
+                "faculty_id": faculty_id,
+                "room_id": room_id,
+                "section_id": section_id,
+                "timeslot_id": timeslot_id,
+            },
         )
         notify(db, title="Manual timetable assignment added", message=f"Run #{run_id}: manual assignment updated.", kind="info")
         db.commit()
@@ -127,6 +137,7 @@ def get_timetable(
             joinedload(Assignment.course),
             joinedload(Assignment.faculty),
             joinedload(Assignment.room),
+            joinedload(Assignment.section),
             joinedload(Assignment.timeslot),
         )
     )
@@ -139,10 +150,12 @@ def get_timetable(
             "run_id": a.run_id,
             "timeslot_id": a.timeslot_id,
             "room_id": a.room_id,
+            "section_id": a.section_id,
             "faculty_id": a.faculty_id,
             "course": a.course.name if a.course else None,
             "faculty": a.faculty.name if a.faculty else None,
             "room": a.room.name if a.room else None,
+            "section": a.section.name if a.section else None,
             "day": a.timeslot.day if a.timeslot else None,
             "time": a.timeslot.slot if a.timeslot else None,
         }
@@ -177,6 +190,7 @@ def manual_resources(db: Session = Depends(get_db), _user=Depends(require_roles(
         "courses": db.query(Course).all(),
         "faculty": db.query(Faculty).all(),
         "rooms": db.query(Room).all(),
+        "sections": db.query(Section).all(),
     }
 
 
@@ -186,6 +200,7 @@ def override_entry(
     timeslot_id: int,
     room_id: int | None = None,
     faculty_id: int | None = None,
+    section_id: int | None = None,
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin", "department_head")),
 ):
@@ -195,6 +210,7 @@ def override_entry(
         timeslot_id=timeslot_id,
         room_id=room_id,
         faculty_id=faculty_id,
+        section_id=section_id,
     )
     if not result.get("error"):
         write_audit(
@@ -204,7 +220,7 @@ def override_entry(
             entity_id=str(assignment_id),
             actor_username=current_user.get("username"),
             actor_role=current_user.get("role"),
-            meta={"timeslot_id": timeslot_id, "room_id": room_id, "faculty_id": faculty_id},
+            meta={"timeslot_id": timeslot_id, "room_id": room_id, "faculty_id": faculty_id, "section_id": section_id},
         )
         notify(
             db,

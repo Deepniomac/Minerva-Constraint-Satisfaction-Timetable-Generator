@@ -46,6 +46,12 @@ Run backend:
 python -m uvicorn app.main:app --reload
 ```
 
+Optional: seed quick demo data (departments/faculty/courses/rooms/sections/timeslots/semester):
+
+```bash
+python scripts/seed_demo.py
+```
+
 Backend URLs:
 - API root: `http://127.0.0.1:8000/`
 - Swagger: `http://127.0.0.1:8000/docs`
@@ -82,6 +88,7 @@ Open Swagger (`/docs`) and run in order:
    - `POST /faculty`
    - `POST /courses`
    - `POST /rooms`
+   - `POST /sections`
    - `POST /timeslots` (multiple)
 
 ## 5) Timetable Workflow
@@ -115,3 +122,27 @@ Open Swagger (`/docs`) and run in order:
 - **Frontend cannot call backend**
   - ensure backend runs on `127.0.0.1:8000`
   - check `CORS_ALLOW_ORIGINS` in `.env`
+
+## 8) Chatbot Safe Usage Flow
+
+In Minerva chat:
+
+1. Type command text and click **Preview**
+2. Review parsed actions and blocked items
+3. Click **Apply Preview** to commit DB changes
+
+Example:
+
+```text
+add section CSE-A dept CSE;
+add faculty Dr Rao dept CSE;
+map faculty Dr Rao to Data Structures
+```
+
+## 9) Run Unit Tests
+
+```bash
+cd ..
+set PYTHONPATH=backend
+python -m pytest backend/tests
+```

@@ -183,3 +183,47 @@ Implemented final hardening and runbook documentation:
 
 - Added `docs/RUN_FROM_SCRATCH.md`
 - Updated `README.md`
+
+---
+
+# Final Polish Changelog
+
+## Date
+
+2026-04-14
+
+## Summary
+
+Implemented final ship-ready UX and data-safety upgrades:
+
+- Role-locked navigation and single-login role redirects
+- Minerva chatbot preview/apply mode for safer data entry
+- Explicit section model with hard section-overlap conflict validation
+- Home dashboard cards for quick system health visibility
+- Seed script and unit tests for repeatable setup and confidence
+
+## Backend Updates
+
+- Added `backend/app/models/section.py`
+- Updated `backend/app/models/assignment.py` with `section_id`
+- Added `backend/app/routes/sections.py`
+- Updated:
+  - `backend/app/main.py`
+  - `backend/app/routes/timetable.py`
+  - `backend/app/services/timetable_generator.py`
+  - `backend/app/services/minerva_chatbot.py`
+  - `backend/requirements.txt`
+- Added:
+  - `backend/scripts/seed_demo.py`
+  - `backend/tests/test_timetable_validation.py`
+
+## Frontend Updates
+
+- Updated `frontend/src/App.js`:
+  - Role-locked top navigation
+  - Home dashboard metric cards
+  - Chatbot preview/apply buttons
+  - Manual section selection in drag-and-drop flow
+- Updated `frontend/src/App.css`:
+  - Added disabled button styling
+  - Updated manual layout for section selector

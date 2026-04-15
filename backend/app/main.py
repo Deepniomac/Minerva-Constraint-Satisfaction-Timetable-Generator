@@ -18,8 +18,9 @@ from app.models.timetable_run import TimetableRun
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 from app.models.faculty_course_map import FacultyCourseMap
+from app.models.section import Section
 
-from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports, chatbot
+from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports, chatbot, sections
 from app.services.csv_importer import import_subjects_csv
 
 app = FastAPI(title="Minerva Timetable API")
@@ -49,6 +50,8 @@ def _run_lightweight_schema_updates() -> None:
                 conn.execute(text("ALTER TABLE assignments ADD COLUMN semester_id INTEGER"))
             if "run_id" not in assignment_cols:
                 conn.execute(text("ALTER TABLE assignments ADD COLUMN run_id INTEGER"))
+            if "section_id" not in assignment_cols:
+                conn.execute(text("ALTER TABLE assignments ADD COLUMN section_id INTEGER"))
 
 
 _run_lightweight_schema_updates()
@@ -66,6 +69,7 @@ app.include_router(audit.router)
 app.include_router(reports.router)
 app.include_router(imports.router)
 app.include_router(chatbot.router)
+app.include_router(sections.router)
 
 
 @app.get("/")

@@ -90,14 +90,28 @@ Minerva automates timetable setup for institutions by replacing manual spreadshe
 6. Generate timetable
 7. Open frontend and show role-aware controls
 
-## 8) Known Gaps (Next Phases)
+## 8) Final Ship-Ready Enhancements
 
-Completed in Phase 2:
-- Conflict detection validation endpoint
-- Semester-aware run versioning and publish workflow
+- Role-locked navigation in frontend:
+  - Tabs are only shown for pages allowed by current role
+  - Single login entry redirects to role-specific landing page
+- Chatbot preview/confirm safety:
+  - `apply=false` gives dry-run response without DB writes
+  - Apply action confirms and commits changes
+- Dedicated section model:
+  - Added `Section` entity and `/sections/*` CRUD
+  - Assignments now store `section_id`
+  - Validation includes `section_overlap` hard conflict checks
+- Home dashboard cards:
+  - Total runs, published/draft split
+  - Notification totals/unread
+  - Department and faculty counts
+- Delivery hardening:
+  - Added seed script: `backend/scripts/seed_demo.py`
+  - Added tests: `backend/tests/test_timetable_validation.py`
 
-Open gaps:
-- Advanced CSP optimization objective functions
-- True drag-and-drop interactions (current Phase 3 override is form-driven)
-- Utilization analytics dashboards
-- Export/reporting, notifications, audit trail
+## 9) Remaining Optional Next Steps
+
+- Add rollback/undo for chatbot transaction batches
+- Add soft constraints (faculty load balancing, gap minimization)
+- Add CI workflow for automated lint/test/build on push

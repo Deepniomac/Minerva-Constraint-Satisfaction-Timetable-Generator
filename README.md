@@ -1,6 +1,14 @@
 # Minerva Constraint Satisfaction Timetable Generator
 
-Phase 1 to Phase 4 foundation for a timetable automation platform aligned to the PRD.
+Complete Phase 1 to Phase 5 timetable automation platform aligned to the PRD, including role-based UI, manual+auto scheduling, section-aware conflict checks, and Minerva chatbot-assisted data entry.
+
+## Project Overview
+
+Minerva helps institutions move from spreadsheet-based scheduling to a guided, role-aware system:
+- Admin/Department Head manage master data and release runs.
+- Faculty operate run workflows and manual adjustments.
+- Students consume published schedules with clean read-only controls.
+- Minerva chatbot supports preview+apply workflows for raw command-based data updates.
 
 ## Repository Structure
 
@@ -79,6 +87,13 @@ npm start
 - Added health endpoint: `GET /health`
 - Added `.env.example` for reproducible setup
 - Added full run guide: `docs/RUN_FROM_SCRATCH.md`
+- Added role-locked frontend navigation and single-login redirect by role
+- Added dedicated `Section` model and API (`/sections/*`) for explicit section scheduling
+- Added section-overlap validation in timetable engine (`section_overlap` conflict type)
+- Added Minerva chatbot preview/apply flow (dry run before commit)
+- Added Home dashboard cards for runs, publication status, notifications, and master-data counts
+- Added backend seed script: `backend/scripts/seed_demo.py`
+- Added unit tests for timetable section overlap: `backend/tests/test_timetable_validation.py`
 
 ## Architecture Diagram
 
@@ -147,3 +162,4 @@ sequenceDiagram
 - `docs/PROJECT_FROM_SCRATCH.md`
 - `docs/PHASE1_CHANGELOG.md`
 - `docs/RUN_FROM_SCRATCH.md`
+- `docs/OVERVIEW.md`
