@@ -17,6 +17,7 @@ from app.models.semester import Semester
 from app.models.timetable_run import TimetableRun
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
+from app.models.faculty_course_map import FacultyCourseMap
 
 from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports
 from app.services.csv_importer import import_subjects_csv

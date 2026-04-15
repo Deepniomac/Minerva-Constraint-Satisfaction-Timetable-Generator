@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.assignment import Assignment
 from app.models.course import Course
 from app.models.faculty import Faculty
+from app.models.faculty_course_map import FacultyCourseMap
 from app.models.room import Room
 from app.models.semester import Semester
 from app.models.timetable_run import TimetableRun
@@ -75,6 +76,9 @@ def generate_timetable(db: Session, semester_id: int | None = None):
     faculty_by_dept = defaultdict(list)
     for f in faculty_list:
         faculty_by_dept[f.dept_id].append(f.id)
+    faculty_by_course = defaultdict(list)
+    for m in db.query(FacultyCourseMap).all():
+        faculty_by_course[m.course_id].append(m.faculty_id)
     room_by_type = defaultdict(list)
     for r in rooms:
         room_by_type[(r.type or "").strip().lower()].append(r.id)
@@ -82,7 +86,9 @@ def generate_timetable(db: Session, semester_id: int | None = None):
     created = 0
     unscheduled_courses = []
     for course in courses:
-        preferred_faculty = faculty_by_dept.get(course.dept_id) or faculty_ids
+        # If explicit faculty-course mapping exists, use it first.
+        # This naturally allows one faculty to teach multiple subjects.
+        preferred_faculty = faculty_by_course.get(course.id) or faculty_by_dept.get(course.dept_id) or faculty_ids
         preferred_rooms = room_by_type.get("lab" if course.is_lab else "classroom") or room_ids
         placed = False
         for ts in timeslots:

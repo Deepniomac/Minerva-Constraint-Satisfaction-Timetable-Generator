@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.course import Course
 from app.models.department import Department
 from app.models.faculty import Faculty
+from app.models.faculty_course_map import FacultyCourseMap
 from app.models.room import Room
 
 
@@ -35,6 +36,10 @@ def _import_subject_rows(db: Session, rows: Iterable[dict], source: str) -> dict
     existing_faculty = {f.name.strip().lower(): f for f in db.query(Faculty).all() if f.name}
     existing_courses = {c.name.strip().lower(): c for c in db.query(Course).all() if c.name}
     existing_rooms = {r.name.strip().lower(): r for r in db.query(Room).all() if r.name}
+    existing_mappings = {
+        (m.faculty_id, m.course_id)
+        for m in db.query(FacultyCourseMap).all()
+    }
 
     stats = {
         "rows_processed": 0,
@@ -42,6 +47,7 @@ def _import_subject_rows(db: Session, rows: Iterable[dict], source: str) -> dict
         "courses_created": 0,
         "courses_updated": 0,
         "rooms_created": 0,
+        "faculty_course_mappings_created": 0,
     }
 
     for row in rows:
@@ -76,6 +82,16 @@ def _import_subject_rows(db: Session, rows: Iterable[dict], source: str) -> dict
                 if (course.hours_per_week or 0) < hours:
                     course.hours_per_week = hours
                     stats["courses_updated"] += 1
+
+        if professor and subject:
+            f_obj = existing_faculty.get(professor.lower())
+            c_obj = existing_courses.get(subject.lower())
+            if f_obj and c_obj:
+                key = (f_obj.id, c_obj.id)
+                if key not in existing_mappings:
+                    db.add(FacultyCourseMap(faculty_id=f_obj.id, course_id=c_obj.id))
+                    existing_mappings.add(key)
+                    stats["faculty_course_mappings_created"] += 1
 
         for sec in sections:
             key = sec.lower()
