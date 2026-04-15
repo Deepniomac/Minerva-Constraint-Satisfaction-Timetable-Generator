@@ -19,7 +19,7 @@ from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 from app.models.faculty_course_map import FacultyCourseMap
 
-from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports
+from app.routes import auth, departments, faculty, courses, rooms, timeslots, semesters, timetable, notifications, audit, reports, imports, chatbot
 from app.services.csv_importer import import_subjects_csv
 
 app = FastAPI(title="Minerva Timetable API")
@@ -65,6 +65,7 @@ app.include_router(notifications.router)
 app.include_router(audit.router)
 app.include_router(reports.router)
 app.include_router(imports.router)
+app.include_router(chatbot.router)
 
 
 @app.get("/")

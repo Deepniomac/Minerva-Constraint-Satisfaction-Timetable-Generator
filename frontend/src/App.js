@@ -31,6 +31,14 @@ export default function App() {
   const [manualCourseId, setManualCourseId] = useState("");
   const [manualFacultyId, setManualFacultyId] = useState("");
   const [manualRoomId, setManualRoomId] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([
+    {
+      role: "bot",
+      text: "Hi, I am Minerva. Enter raw data commands and I will refine and add them. Example: add department CSE; add faculty Dr Rao dept CSE; add course Data Structures hours 3 dept CSE",
+    },
+  ]);
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   async function login() {
@@ -215,6 +223,28 @@ export default function App() {
       setMessage("Manual assignment applied.");
     } catch (error) {
       setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Manual assignment failed");
+    }
+  }
+
+  async function sendMinervaMessage() {
+    const text = chatInput.trim();
+    if (!text) return;
+    setChatHistory((prev) => [...prev, { role: "user", text }]);
+    setChatInput("");
+    try {
+      const res = await axios.post(
+        `${API_BASE}/chatbot/minerva`,
+        { message: text, apply: true },
+        { headers: authHeaders }
+      );
+      const payload = JSON.stringify(res.data, null, 2);
+      setChatHistory((prev) => [...prev, { role: "bot", text: payload }]);
+      setMessage("Minerva processed your request.");
+      await Promise.all([listDepartments(), loadManualResources()]);
+    } catch (error) {
+      const detail = error?.response?.data?.detail || "Minerva request failed";
+      setChatHistory((prev) => [...prev, { role: "bot", text: String(detail) }]);
+      setMessage(String(detail));
     }
   }
 
@@ -471,6 +501,33 @@ export default function App() {
           <pre className="json-box">{JSON.stringify(auditRows, null, 2)}</pre>
         </div>
       </section>
+
+      <button className="minerva-fab" onClick={() => setChatOpen((v) => !v)}>
+        {chatOpen ? "Close Minerva" : "Minerva Chat"}
+      </button>
+
+      {chatOpen && (
+        <div className="minerva-chat">
+          <div className="minerva-chat-header">Minerva Assistant</div>
+          <div className="minerva-chat-body">
+            {chatHistory.map((m, idx) => (
+              <div key={idx} className={`chat-msg ${m.role}`}>
+                <pre>{m.text}</pre>
+              </div>
+            ))}
+          </div>
+          <div className="minerva-chat-input">
+            <textarea
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Type raw data, e.g. add faculty Dr Snape dept CSE; add room 5A capacity 60"
+            />
+            <button className="btn btn-primary" onClick={sendMinervaMessage}>
+              Send
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
