@@ -62,6 +62,7 @@ def _import_subject_rows(db: Session, rows: Iterable[dict], source: str) -> dict
             if key not in existing_faculty:
                 faculty = Faculty(name=professor, dept_id=department.id)
                 db.add(faculty)
+                db.flush()
                 existing_faculty[key] = faculty
                 stats["faculty_created"] += 1
 
@@ -75,6 +76,7 @@ def _import_subject_rows(db: Session, rows: Iterable[dict], source: str) -> dict
                     is_lab=("lab" in subject.lower()),
                 )
                 db.add(course)
+                db.flush()
                 existing_courses[key] = course
                 stats["courses_created"] += 1
             else:

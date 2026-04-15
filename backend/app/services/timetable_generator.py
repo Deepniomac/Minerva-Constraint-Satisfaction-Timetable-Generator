@@ -145,6 +145,80 @@ def publish_timetable(db: Session, run_id: int):
     return {"message": "Timetable published", "run_id": run_id, "status": run.status}
 
 
+def create_manual_run(db: Session, semester_id: int | None = None):
+    semester = None
+    if semester_id is not None:
+        semester = db.query(Semester).filter(Semester.id == semester_id).first()
+    if semester is None:
+        semester = db.query(Semester).filter(Semester.is_active == True).first()  # noqa: E712
+    if semester is None:
+        return {"error": "No active semester found. Create/activate a semester first."}
+    latest_version = db.query(func.max(TimetableRun.version)).filter(TimetableRun.semester_id == semester.id).scalar() or 0
+    run = TimetableRun(semester_id=semester.id, version=latest_version + 1, status="draft")
+    db.add(run)
+    db.commit()
+    return {
+        "message": "Manual timetable draft run created",
+        "run_id": run.id,
+        "semester_id": semester.id,
+        "version": run.version,
+        "status": run.status,
+    }
+
+
+def create_manual_assignment(
+    db: Session,
+    run_id: int,
+    course_id: int,
+    faculty_id: int,
+    room_id: int,
+    timeslot_id: int,
+):
+    run = db.query(TimetableRun).filter(TimetableRun.id == run_id).first()
+    if not run:
+        return {"error": "Run not found"}
+    if run.status != "draft":
+        return {"error": "Only draft runs can be edited manually"}
+    target_timeslot = db.query(TimeSlot).filter(TimeSlot.id == timeslot_id).first()
+    if not target_timeslot:
+        return {"error": "Timeslot not found"}
+
+    # Ensure selected faculty is eligible to teach selected course if mapping exists.
+    mapped_faculty = [m.faculty_id for m in db.query(FacultyCourseMap).filter(FacultyCourseMap.course_id == course_id).all()]
+    if mapped_faculty and faculty_id not in mapped_faculty:
+        return {"error": "Selected faculty is not mapped to this course"}
+
+    # Upsert by course+run so each course has one assignment in a run.
+    assignment = db.query(Assignment).filter(Assignment.run_id == run_id, Assignment.course_id == course_id).first()
+    if assignment is None:
+        assignment = Assignment(
+            run_id=run_id,
+            semester_id=run.semester_id,
+            course_id=course_id,
+            faculty_id=faculty_id,
+            room_id=room_id,
+            timeslot_id=timeslot_id,
+        )
+        db.add(assignment)
+    else:
+        assignment.faculty_id = faculty_id
+        assignment.room_id = room_id
+        assignment.timeslot_id = timeslot_id
+
+    db.flush()
+    validation = validate_current_run(db, run_id)
+    if not validation["is_valid"]:
+        db.rollback()
+        return {"error": "Manual assignment creates conflicts", "validation": validation}
+    db.commit()
+    return {
+        "message": "Manual assignment saved",
+        "run_id": run_id,
+        "assignment_id": assignment.id,
+        "validation": validation,
+    }
+
+
 def override_assignment(
     db: Session,
     assignment_id: int,

@@ -24,6 +24,13 @@ export default function App() {
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
   const [overrideTimeslotId, setOverrideTimeslotId] = useState("");
   const [csvFile, setCsvFile] = useState(null);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualCourses, setManualCourses] = useState([]);
+  const [manualFaculty, setManualFaculty] = useState([]);
+  const [manualRooms, setManualRooms] = useState([]);
+  const [manualCourseId, setManualCourseId] = useState("");
+  const [manualFacultyId, setManualFacultyId] = useState("");
+  const [manualRoomId, setManualRoomId] = useState("");
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   async function login() {
@@ -171,6 +178,46 @@ export default function App() {
     }
   }
 
+  async function loadManualResources() {
+    try {
+      const res = await axios.get(`${API_BASE}/timetable/manual/resources`, { headers: authHeaders });
+      setManualCourses(res.data.courses || []);
+      setManualFaculty(res.data.faculty || []);
+      setManualRooms(res.data.rooms || []);
+      setMessage("Manual resources loaded.");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || "Failed to load manual resources");
+    }
+  }
+
+  async function startManualRun() {
+    try {
+      const qs = semesterInput ? `?semester_id=${encodeURIComponent(semesterInput)}` : "";
+      const res = await axios.post(`${API_BASE}/timetable/manual/start${qs}`, {}, { headers: authHeaders });
+      setRunIdInput(String(res.data.run_id || ""));
+      await loadRunTimetable(res.data.run_id);
+      setMessage(`Manual run started: #${res.data.run_id}`);
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Failed to start manual run");
+    }
+  }
+
+  async function assignManualToTimeslot(timeslotId) {
+    try {
+      if (!runIdInput) return setMessage("Start or select a run first.");
+      if (!manualCourseId || !manualFacultyId || !manualRoomId) {
+        return setMessage("Select course, faculty, and room before dropping.");
+      }
+      const url = `${API_BASE}/timetable/manual/assign?run_id=${encodeURIComponent(runIdInput)}&course_id=${encodeURIComponent(manualCourseId)}&faculty_id=${encodeURIComponent(manualFacultyId)}&room_id=${encodeURIComponent(manualRoomId)}&timeslot_id=${encodeURIComponent(timeslotId)}`;
+      const res = await axios.post(url, {}, { headers: authHeaders });
+      setValidation(res.data.validation || null);
+      await loadRunTimetable(runIdInput);
+      setMessage("Manual assignment applied.");
+    } catch (error) {
+      setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Manual assignment failed");
+    }
+  }
+
   async function uploadSubjectsCsv() {
     try {
       if (!csvFile) return setMessage("Select a CSV file first.");
@@ -207,8 +254,16 @@ export default function App() {
 
   const isAdminLike = role === "admin" || role === "department_head";
   const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const orderedDays = useMemo(() => Array.from(new Set(rows.map((r) => r.day).filter(Boolean))).sort((a, b) => (dayOrder.indexOf(a) === -1 ? 99 : dayOrder.indexOf(a)) - (dayOrder.indexOf(b) === -1 ? 99 : dayOrder.indexOf(b))), [rows]);
-  const orderedSlots = useMemo(() => Array.from(new Set(rows.map((r) => r.time).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true })), [rows]);
+  const orderedDays = useMemo(() => {
+    const fromRows = rows.map((r) => r.day).filter(Boolean);
+    const fromSlots = timeslots.map((t) => t.day).filter(Boolean);
+    return Array.from(new Set([...fromRows, ...fromSlots])).sort((a, b) => (dayOrder.indexOf(a) === -1 ? 99 : dayOrder.indexOf(a)) - (dayOrder.indexOf(b) === -1 ? 99 : dayOrder.indexOf(b)));
+  }, [rows, timeslots]);
+  const orderedSlots = useMemo(() => {
+    const fromRows = rows.map((r) => r.time).filter(Boolean);
+    const fromSlots = timeslots.map((t) => t.slot).filter(Boolean);
+    return Array.from(new Set([...fromRows, ...fromSlots])).sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+  }, [rows, timeslots]);
   const conflictCells = useMemo(() => new Set((validation?.conflicts || []).map((c) => `${c.day}__${c.slot}`)), [validation]);
   const cellMap = useMemo(() => new Map(rows.map((r) => [`${r.day}__${r.time}`, r])), [rows]);
 
@@ -231,7 +286,12 @@ export default function App() {
           <input className="field" placeholder="Semester id (optional)" value={semesterInput} onChange={(e) => setSemesterInput(e.target.value)} />
           <input className="field" placeholder="Run id" value={runIdInput} onChange={(e) => setRunIdInput(e.target.value)} />
           <div className="btn-grid">
+            <button className={`btn ${manualMode ? "btn-primary" : ""}`} onClick={() => setManualMode((v) => !v)}>
+              {manualMode ? "Manual Mode ON" : "Manual Mode"}
+            </button>
             <button className="btn" onClick={generateTimetable}>Generate</button>
+            <button className="btn" onClick={startManualRun}>Start Manual Run</button>
+            <button className="btn" onClick={loadManualResources}>Manual Resources</button>
             <button className="btn" onClick={validateRun}>Validate</button>
             <button className="btn" onClick={listRuns}>Runs</button>
             <button className="btn" onClick={() => loadRunTimetable(runIdInput)}>Load</button>
@@ -307,6 +367,39 @@ export default function App() {
           </div>
         )}
 
+        {isAdminLike && manualMode && (
+          <div className="card inline-manual">
+            <h3>Manual Drag Assign</h3>
+            <select className="field" value={manualCourseId} onChange={(e) => setManualCourseId(e.target.value)}>
+              <option value="">Course</option>
+              {manualCourses.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select className="field" value={manualFacultyId} onChange={(e) => setManualFacultyId(e.target.value)}>
+              <option value="">Faculty</option>
+              {manualFaculty.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            <select className="field" value={manualRoomId} onChange={(e) => setManualRoomId(e.target.value)}>
+              <option value="">Room</option>
+              {manualRooms.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+            <div
+              className="drag-card"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/plain", "manual-assign");
+              }}
+            >
+              Drag this card to a timetable slot
+            </div>
+          </div>
+        )}
+
         <div className="card table-card">
           <div className="table-wrap">
             <table className="schedule-table">
@@ -325,7 +418,19 @@ export default function App() {
                       const entry = cellMap.get(key);
                       const isConflict = conflictCells.has(key);
                       return (
-                        <td key={key} className={isConflict ? "slot conflict" : "slot"}>
+                        <td
+                          key={key}
+                          className={isConflict ? "slot conflict" : "slot"}
+                          onDragOver={(e) => {
+                            if (manualMode) e.preventDefault();
+                          }}
+                          onDrop={async (e) => {
+                            if (!manualMode) return;
+                            e.preventDefault();
+                            const ts = timeslots.find((t) => t.day === day && String(t.slot) === String(slot));
+                            if (ts) await assignManualToTimeslot(ts.id);
+                          }}
+                        >
                           {entry ? (
                             <div className="entry">
                               <div className="entry-title">{entry.course}</div>
