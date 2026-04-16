@@ -347,10 +347,16 @@ export default function App() {
     try {
       const qs = semesterInput ? `?semester_id=${encodeURIComponent(semesterInput)}` : "";
       const res = await axios.post(`${API_BASE}/timetable/generate${qs}`, {}, { headers: authHeaders });
+      if (res.data?.error) {
+        return setMessage(`Generate failed: ${res.data.error}`);
+      }
+      if (!res.data?.run_id) {
+        return setMessage("Generate failed: missing run id in response. Please verify semesters/rooms/timeslots.");
+      }
       setRunIdInput(String(res.data.run_id || ""));
       await loadRunTimetable(res.data.run_id);
       setValidation(res.data.validation || null);
-      setMessage(`${res.data.message} | run=${res.data.run_id} | version=${res.data.version}`);
+      setMessage(`${res.data.message || "Draft timetable generated"} | run=${res.data.run_id} | version=${res.data.version ?? "-"}`);
     } catch (error) {
       setMessage(error?.response?.data?.detail || error?.response?.data?.error || "Generation failed");
     }

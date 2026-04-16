@@ -137,6 +137,10 @@ Alternative via frontend:
 - **Frontend cannot call backend**
   - ensure backend runs on `127.0.0.1:8000`
   - check `CORS_ALLOW_ORIGINS` in `.env`
+- **Generate shows missing/undefined run/version**
+  - ensure at least one active semester exists
+  - ensure rooms and timeslots are seeded
+  - frontend now shows explicit generate failure messages when prerequisites are missing
 
 ## 9) Chatbot Safe Usage Flow
 

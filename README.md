@@ -109,6 +109,16 @@ npm start
 - `POST /resources/confidential` (admin-only, backend/manual workflow)
 - `GET /resources/internal` (admin/department_head)
 
+## Current Verification Status
+
+Latest project health checks completed successfully:
+- Backend compile: `python -m compileall backend/app backend/scripts`
+- Backend tests: `python -m pytest backend/tests` (all passing)
+- Frontend build: `npm run build`
+
+Latest frontend reliability fix:
+- Generate workflow now surfaces backend error messages clearly instead of showing undefined run/version when prerequisites are missing.
+
 ## Architecture Diagram
 
 ```mermaid

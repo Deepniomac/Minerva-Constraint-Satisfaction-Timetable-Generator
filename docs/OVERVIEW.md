@@ -39,3 +39,10 @@ Minerva is a role-aware timetable automation platform for academic institutions.
   - Students read curriculum/notes/announcements in Resources page
   - Confidential resources remain admin/backend-only
 - Role-based signup/signin box in frontend with persisted session identity
+
+## Latest Stability Pass
+
+- Backend compile check passed
+- Backend unit tests passed
+- Frontend production build passed
+- Generate flow message handling improved to prevent `undefined run/version` display
